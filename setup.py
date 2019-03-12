@@ -29,7 +29,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='yubihsm-pkcs11tester',
-    version='1.0.0,
+    version='1.0.0',
     description='python pkcs11 tester for YubiHSM',
     url='git@github.com:YubicoLabs/python-pkcs11tester.git',
     author='Yubico',
