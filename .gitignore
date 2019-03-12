@@ -1,0 +1,6 @@
+*.pyc
+*.egg
+*.egg-info
+build/
+.eggs/
+yubihsm_pkcs11.conf
