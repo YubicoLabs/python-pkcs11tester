@@ -7,6 +7,7 @@ import datetime
 import uuid
 
 import PyKCS11
+import PyKCS11.LowLevel
 from PyKCS11 import PyKCS11Error
 
 from cryptography.hazmat.backends import default_backend
