@@ -174,18 +174,14 @@ class Pkcs11Tester(unittest.TestCase):
       key2 = serialization.load_der_public_key(''.join(map(chr, session.getAttributeValue(pubkey, [PyKCS11.CKA_VALUE])[0])), default_backend())
       self.assertEquals(key.public_numbers(), key2.public_numbers())
 
-      verifier = key.verifier(''.join(map(chr, signature)), padding.PKCS1v15(), mech["h"])
-      verifier.update(tosign)
-      verifier.verify()
+      key.verify(''.join(map(chr, signature)), tosign, padding.PKCS1v15(), mech["h"])
 
       signature = session.sign(privkey, hashed, PyKCS11.Mechanism(PyKCS11.CKM_RSA_PKCS, None))
 
       res = session.verify(pubkey, hashed, signature, PyKCS11.Mechanism(PyKCS11.CKM_RSA_PKCS, None))
       self.assertTrue(res)
 
-      verifier = key.verifier(''.join(map(chr, signature)), padding.PKCS1v15(), mech["h"])
-      verifier.update(tosign)
-      verifier.verify()
+      key.verify(''.join(map(chr, signature)), tosign, padding.PKCS1v15(), mech["h"])
 
   def rsaPssSigs(self, session, pubkey, privkey, saltlen = 0):
     mechs = [
@@ -210,9 +206,7 @@ class Pkcs11Tester(unittest.TestCase):
       key2 = serialization.load_der_public_key(''.join(map(chr, session.getAttributeValue(pubkey, [PyKCS11.CKA_VALUE])[0])), default_backend())
       self.assertEquals(key.public_numbers(), key2.public_numbers())
 
-      verifier = key.verifier(''.join(map(chr, sig)), padding.PSS(padding.MGF1(mech["hash"]), saltlen), mech["hash"])
-      verifier.update(tosign)
-      verifier.verify()
+      key.verify(''.join(map(chr, sig)), tosign, padding.PSS(padding.MGF1(mech["hash"]), saltlen), mech["hash"])
 
       digest = hashes.Hash(mech["hash"], backend = default_backend())
       digest.update(tosign)
@@ -294,9 +288,7 @@ class Pkcs11Tester(unittest.TestCase):
     self.assertEquals(key.public_numbers(), key2.public_numbers())
 
     signature = decode_ec_sig(signature)
-    verifier = key.verifier(signature, ec.ECDSA(h))
-    verifier.update(tosign)
-    verifier.verify()
+    key.verify(signature, tosign, ec.ECDSA(h))
 
     signature = session.sign(privkey, hashed, PyKCS11.Mechanism(PyKCS11.CKM_ECDSA, None))
 
@@ -305,9 +297,7 @@ class Pkcs11Tester(unittest.TestCase):
 
     key = self.pubobjToKey(pubkey, session)
     signature = decode_ec_sig(signature)
-    verifier = key.verifier(signature, ec.ECDSA(h))
-    verifier.update(tosign)
-    verifier.verify()
+    key.verify(signature, tosign, ec.ECDSA(h))
 
     session.destroyObject(privkey)
 
@@ -461,9 +451,7 @@ class Pkcs11Tester(unittest.TestCase):
     tosign = os.urandom(2000)
     signature = session.sign(keyobj, tosign, PyKCS11.Mechanism(PyKCS11.CKM_ECDSA_SHA256, None))
     signature = decode_ec_sig(signature)
-    verifier = eckey.public_key().verifier(signature, ec.ECDSA(hashes.SHA256()))
-    verifier.update(tosign)
-    verifier.verify()
+    eckey.public_key().verify(signature, tosign, ec.ECDSA(hashes.SHA256()))
 
     wrap = session.wrapKey(wrapobj, keyobj, mecha=PyKCS11.Mechanism(CKM_YUBICO_AES_CCM_WRAP, None))
 
@@ -473,9 +461,7 @@ class Pkcs11Tester(unittest.TestCase):
 
     signature = session.sign(keyobj, tosign, PyKCS11.Mechanism(PyKCS11.CKM_ECDSA_SHA256, None))
     signature = decode_ec_sig(signature)
-    verifier = eckey.public_key().verifier(signature, ec.ECDSA(hashes.SHA256()))
-    verifier.update(tosign)
-    verifier.verify()
+    eckey.public_key().verify(signature, tosign, ec.ECDSA(hashes.SHA256()))
 
     session.destroyObject(keyobj)
     session.destroyObject(wrapobj)
