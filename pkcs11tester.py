@@ -489,7 +489,7 @@ class Pkcs11Tester(unittest.TestCase):
     encobj = session.createObject(encTemplate)
     decobj = session.createObject(decTemplate)
 
-    for length in (1, 16, 128, 1024, 1997):
+    for length in (1, 16, 128, 1024, 1989):
       data = os.urandom(length)
       cipher = session.encrypt(encobj, data, PyKCS11.Mechanism(CKM_YUBICO_AES_CCM_WRAP, None))
       plain = session.decrypt(decobj, cipher, PyKCS11.Mechanism(CKM_YUBICO_AES_CCM_WRAP, None))
