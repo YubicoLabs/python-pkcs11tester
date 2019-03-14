@@ -7,7 +7,6 @@ import datetime
 import uuid
 
 import PyKCS11
-import PyKCS11.LowLevel
 from PyKCS11 import PyKCS11Error
 
 from cryptography.hazmat.backends import default_backend
@@ -32,28 +31,6 @@ CKK_YUBICO_AES128_CCM_WRAP = PyKCS11.CKK_VENDOR_DEFINED | YUBICO_BASE_VENDOR | 2
 CKK_YUBICO_AES192_CCM_WRAP = PyKCS11.CKK_VENDOR_DEFINED | YUBICO_BASE_VENDOR | 41
 CKK_YUBICO_AES256_CCM_WRAP = PyKCS11.CKK_VENDOR_DEFINED | YUBICO_BASE_VENDOR | 42
 CKM_YUBICO_AES_CCM_WRAP = PyKCS11.CKM_VENDOR_DEFINED | YUBICO_BASE_VENDOR | 0x04
-
-class RSAPssMech(object):
-  def __init__(self, hash, mgf, saltlen, m = None):
-    # zeroes here for struct padding
-    pssparam = struct.pack("LLLLLL", hash, mgf, saltlen, 0, 0, 0)
-
-    self._pssmech = PyKCS11.LowLevel.CK_MECHANISM()
-    if(m != None):
-      self._pssmech.mechanism = m
-    elif(hash == PyKCS11.CKM_SHA_1):
-      self._pssmech.mechanism = PyKCS11.CKM_SHA1_RSA_PKCS_PSS
-    elif(hash == PyKCS11.CKM_SHA256):
-      self._pssmech.mechanism = PyKCS11.CKM_SHA256_RSA_PKCS_PSS
-    elif(hash == PyKCS11.CKM_SHA384):
-      self._pssmech.mechanism = PyKCS11.CKM_SHA384_RSA_PKCS_PSS
-    elif(hash == PyKCS11.CKM_SHA512):
-      self._pssmech.mechanism = PyKCS11.CKM_SHA512_RSA_PKCS_PSS
-    self._pssmech.pParameter = pssparam
-    self._pssmech.ulParameterLen = 24
-
-  def to_native(self):
-    return self._pssmech
 
 def decode_int(num):
   # remove 0x at the start
@@ -186,10 +163,10 @@ class Pkcs11Tester(unittest.TestCase):
 
   def rsaPssSigs(self, session, pubkey, privkey, saltlen = 0):
     mechs = [
-        {"name":"CKM_SHA1_RSA_PKCS_PSS", "m_hash":PyKCS11.CKM_SHA_1, "mgf1":PyKCS11.CKG_MGF1_SHA1, "hash":hashes.SHA1()},
-        {"name":"CKM_SHA256_RSA_PKCS_PSS", "m_hash":PyKCS11.CKM_SHA256, "mgf1":PyKCS11.CKG_MGF1_SHA256, "hash":hashes.SHA256()},
-        {"name":"CKM_SHA384_RSA_PKCS_PSS", "m_hash":PyKCS11.CKM_SHA384, "mgf1":PyKCS11.CKG_MGF1_SHA384, "hash":hashes.SHA384()},
-        {"name":"CKM_SHA512_RSA_PKCS_PSS", "m_hash":PyKCS11.CKM_SHA512, "mgf1":PyKCS11.CKG_MGF1_SHA512, "hash":hashes.SHA512()}
+        {"name":"CKM_SHA1_RSA_PKCS_PSS", "m_mech":PyKCS11.CKM_SHA1_RSA_PKCS_PSS, "m_hash":PyKCS11.CKM_SHA_1, "mgf1":PyKCS11.CKG_MGF1_SHA1, "hash":hashes.SHA1()},
+        {"name":"CKM_SHA256_RSA_PKCS_PSS", "m_mech":PyKCS11.CKM_SHA256_RSA_PKCS_PSS, "m_hash":PyKCS11.CKM_SHA256, "mgf1":PyKCS11.CKG_MGF1_SHA256, "hash":hashes.SHA256()},
+        {"name":"CKM_SHA384_RSA_PKCS_PSS", "m_mech":PyKCS11.CKM_SHA384_RSA_PKCS_PSS, "m_hash":PyKCS11.CKM_SHA384, "mgf1":PyKCS11.CKG_MGF1_SHA384, "hash":hashes.SHA384()},
+        {"name":"CKM_SHA512_RSA_PKCS_PSS", "m_mech":PyKCS11.CKM_SHA512_RSA_PKCS_PSS, "m_hash":PyKCS11.CKM_SHA512, "mgf1":PyKCS11.CKG_MGF1_SHA512, "hash":hashes.SHA512()}
         ]
 
     for mech in (mechs):
@@ -198,9 +175,9 @@ class Pkcs11Tester(unittest.TestCase):
 
       tosign = os.urandom(1500)
 
-      sig = session.sign(privkey, tosign, RSAPssMech(mech["m_hash"], mech["mgf1"], saltlen))
+      sig = session.sign(privkey, tosign, PyKCS11.RSA_PSS_Mechanism(mecha=mech["m_mech"], hashAlg=mech["m_hash"], mgf=mech["mgf1"], sLen=saltlen))
 
-      res = session.verify(pubkey, tosign, sig, RSAPssMech(mech["m_hash"], mech["mgf1"], saltlen))
+      res = session.verify(pubkey, tosign, sig, PyKCS11.RSA_PSS_Mechanism(mech["m_mech"], hashAlg=mech["m_hash"], mgf=mech["mgf1"], sLen=saltlen))
       self.assertTrue(res)
 
       key = self.pubobjToKey(pubkey, session)
@@ -213,8 +190,8 @@ class Pkcs11Tester(unittest.TestCase):
       digest.update(tosign)
       hashed = digest.finalize()
 
-      sig = session.sign(privkey, hashed, RSAPssMech(mech["m_hash"], mech["mgf1"], saltlen, m = PyKCS11.CKM_RSA_PKCS_PSS))
-      res = session.verify(pubkey, hashed, sig, RSAPssMech(mech["m_hash"], mech["mgf1"], saltlen, m = PyKCS11.CKM_RSA_PKCS_PSS))
+      sig = session.sign(privkey, hashed, PyKCS11.RSA_PSS_Mechanism(mecha=mech["m_mech"], hashAlg=mech["m_hash"], mgf=mech["mgf1"], sLen=saltlen))
+      res = session.verify(pubkey, hashed, sig, PyKCS11.RSA_PSS_Mechanism(mech["m_mech"], hashAlg=mech["m_hash"], mgf=mech["mgf1"], sLen=saltlen))
       self.assertTrue(res)
 
   def testGenerateSignRSA2048(self):

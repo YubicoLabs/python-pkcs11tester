@@ -49,5 +49,5 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     test_suite='pkcs11tester',
 
-    install_requires=['cryptography', 'PyKCS11'],
+    install_requires=['cryptography', 'PyKCS11>=1.5.0'],
 )
