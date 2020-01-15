@@ -51,8 +51,8 @@ def decode_int(num):
 
 def decode_ec_sig(signature):
     signature = bytes(signature)
-    r = int(b2a_hex(signature[: len(signature) / 2]), 16)
-    s = int(b2a_hex(signature[len(signature) / 2 :]), 16)
+    r = int(b2a_hex(signature[: len(signature) // 2]), 16)
+    s = int(b2a_hex(signature[len(signature) // 2 :]), 16)
     return utils.encode_dss_signature(r=r, s=s)
 
 
@@ -114,8 +114,8 @@ class Pkcs11Tester(unittest.TestCase):
             else:
                 print("no curve.. %d - %d" % (len(param), len(P256_PARAMS)))
                 return
-            x = point[1 : 1 + len(point) / 2]
-            y = point[1 + len(point) / 2 :]
+            x = point[1 : 1 + len(point) // 2]
+            y = point[1 + len(point) // 2 :]
             key = ec.EllipticCurvePublicNumbers(
                 curve=curve, x=int(b2a_hex(x), 16), y=int(b2a_hex(y), 16)
             )
