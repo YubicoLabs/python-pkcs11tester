@@ -2,13 +2,13 @@
 
 import unittest
 import os
-import struct
 import datetime
 import uuid
 
 import PyKCS11
 from PyKCS11 import PyKCS11Error
 
+from binascii import a2b_hex, b2a_hex
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, ec, padding, utils
@@ -46,20 +46,20 @@ def decode_int(num):
     dec = dec.replace("L", "", 1)
     if len(dec) % 2 == 1:
         dec = "0" + dec
-    return dec.decode("hex")
+    return a2b_hex(dec)
 
 
 def decode_ec_sig(signature):
     signature = "".join(map(chr, signature))
-    r = int(signature[: len(signature) / 2].encode("hex"), 16)
-    s = int(signature[len(signature) / 2 :].encode("hex"), 16)
+    r = int(b2a_hex(signature[: len(signature) / 2]), 16)
+    s = int(b2a_hex(signature[len(signature) / 2 :]), 16)
     return utils.encode_dss_signature(r=r, s=s)
 
 
 class Pkcs11Tester(unittest.TestCase):
     def setUp(self):
         self.pkcs11 = PyKCS11.PyKCS11Lib()
-        if os.environ.has_key("YUBIHSM_PKCS11_MODULE"):
+        if "YUBIHSM_PKCS11_MODULE" in os.environ:
             self.pkcs11.load(os.environ.get("YUBIHSM_PKCS11_MODULE"))
         else:
             raise Exception(
@@ -90,7 +90,7 @@ class Pkcs11Tester(unittest.TestCase):
             n = "".join(map(chr, modulus))
             e = "".join(map(chr, pubexp))
             key = rsa.RSAPublicNumbers(
-                e=int(e.encode("hex"), 16), n=int(n.encode("hex"), 16)
+                e=int(b2a_hex(e), 16), n=int(b2a_hex(n), 16)
             )
         elif t == PyKCS11.CKK_EC:
             (param, point) = session.getAttributeValue(
@@ -118,7 +118,7 @@ class Pkcs11Tester(unittest.TestCase):
             x = point[1 : 1 + len(point) / 2]
             y = point[1 + len(point) / 2 :]
             key = ec.EllipticCurvePublicNumbers(
-                curve=curve, x=int(x.encode("hex"), 16), y=int(y.encode("hex"), 16)
+                curve=curve, x=int(b2a_hex(x), 16), y=int(b2a_hex(y), 16)
             )
 
         return key.public_key(backend=default_backend())
