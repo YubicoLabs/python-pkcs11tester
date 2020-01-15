@@ -50,7 +50,7 @@ def decode_int(num):
 
 
 def decode_ec_sig(signature):
-    signature = "".join(map(chr, signature))
+    signature = bytes(signature)
     r = int(b2a_hex(signature[: len(signature) / 2]), 16)
     s = int(b2a_hex(signature[len(signature) / 2 :]), 16)
     return utils.encode_dss_signature(r=r, s=s)
@@ -87,8 +87,8 @@ class Pkcs11Tester(unittest.TestCase):
             (modulus, pubexp) = session.getAttributeValue(
                 pubkey, [PyKCS11.CKA_MODULUS, PyKCS11.CKA_PUBLIC_EXPONENT]
             )
-            n = "".join(map(chr, modulus))
-            e = "".join(map(chr, pubexp))
+            n = bytes(modulus)
+            e = bytes(pubexp)
             key = rsa.RSAPublicNumbers(
                 e=int(b2a_hex(e), 16), n=int(b2a_hex(n), 16)
             )
@@ -96,13 +96,12 @@ class Pkcs11Tester(unittest.TestCase):
             (param, point) = session.getAttributeValue(
                 pubkey, [PyKCS11.CKA_EC_PARAMS, PyKCS11.CKA_EC_POINT]
             )
-            param = "".join(map(chr, param))
+            param = bytes(param)
             point = point[1:]
             if point[0] == 0x81:
                 point = point[1:]
             self.assertEqual(point[0] + 1, len(point))
-            point = point[1:]  # length byte
-            point = "".join(map(chr, point))
+            point = bytes(point[1:])  # length byte
             if param == P256_PARAMS:
                 curve = ec.SECP256R1()
                 clen = 32
@@ -191,15 +190,13 @@ class Pkcs11Tester(unittest.TestCase):
 
             key = self.pubobjToKey(pubkey, session)
             key2 = serialization.load_der_public_key(
-                "".join(
-                    map(chr, session.getAttributeValue(pubkey, [PyKCS11.CKA_VALUE])[0])
-                ),
+                bytes(session.getAttributeValue(pubkey, [PyKCS11.CKA_VALUE])[0]),
                 default_backend(),
             )
             self.assertEqual(key.public_numbers(), key2.public_numbers())
 
             key.verify(
-                "".join(map(chr, signature)), tosign, padding.PKCS1v15(), mech["h"]
+                bytes(signature), tosign, padding.PKCS1v15(), mech["h"]
             )
 
             signature = session.sign(
@@ -212,7 +209,7 @@ class Pkcs11Tester(unittest.TestCase):
             self.assertTrue(res)
 
             key.verify(
-                "".join(map(chr, signature)), tosign, padding.PKCS1v15(), mech["h"]
+                bytes(signature), tosign, padding.PKCS1v15(), mech["h"]
             )
 
     def rsaPssSigs(self, session, pubkey, privkey, saltlen=0):
@@ -279,15 +276,13 @@ class Pkcs11Tester(unittest.TestCase):
 
             key = self.pubobjToKey(pubkey, session)
             key2 = serialization.load_der_public_key(
-                "".join(
-                    map(chr, session.getAttributeValue(pubkey, [PyKCS11.CKA_VALUE])[0])
-                ),
+                bytes(session.getAttributeValue(pubkey, [PyKCS11.CKA_VALUE])[0]),
                 default_backend(),
             )
             self.assertEqual(key.public_numbers(), key2.public_numbers())
 
             key.verify(
-                "".join(map(chr, sig)),
+                bytes(sig),
                 tosign,
                 padding.PSS(padding.MGF1(mech["hash"]), saltlen),
                 mech["hash"],
@@ -391,9 +386,7 @@ class Pkcs11Tester(unittest.TestCase):
 
         key = self.pubobjToKey(pubkey, session)
         key2 = serialization.load_der_public_key(
-            "".join(
-                map(chr, session.getAttributeValue(pubkey, [PyKCS11.CKA_VALUE])[0])
-            ),
+            bytes(session.getAttributeValue(pubkey, [PyKCS11.CKA_VALUE])[0]),
             default_backend(),
         )
         self.assertEqual(key.public_numbers(), key2.public_numbers())
@@ -469,10 +462,9 @@ class Pkcs11Tester(unittest.TestCase):
 
         ciphertext = key.public_key().encrypt(data, padding.PKCS1v15())
 
-        decrypted = session.decrypt(
+        decrypted = bytes(session.decrypt(
             keyobj, ciphertext, PyKCS11.Mechanism(PyKCS11.CKM_RSA_PKCS, None)
-        )
-        decrypted = "".join(map(chr, decrypted))
+        ))
         self.assertEqual(data, decrypted)
 
         self.assertIn("CKM_RSA_PKCS_OAEP", self.mechs)
@@ -489,12 +481,11 @@ class Pkcs11Tester(unittest.TestCase):
             ),
         )
 
-        decrypted = session.decrypt(
+        decrypted = bytes(session.decrypt(
             keyobj,
             ciphertext,
             PyKCS11.RSAOAEPMechanism(PyKCS11.CKM_SHA384, PyKCS11.CKG_MGF1_SHA384),
-        )
-        decrypted = "".join(map(chr, decrypted))
+        ))
         self.assertEqual(data, decrypted)
 
         session.destroyObject(keyobj)
@@ -639,10 +630,9 @@ class Pkcs11Tester(unittest.TestCase):
             cipher = session.encrypt(
                 encobj, data, PyKCS11.Mechanism(CKM_YUBICO_AES_CCM_WRAP, None)
             )
-            plain = session.decrypt(
+            plain = bytes(session.decrypt(
                 decobj, cipher, PyKCS11.Mechanism(CKM_YUBICO_AES_CCM_WRAP, None)
-            )
-            plain = "".join(map(chr, plain))
+            ))
             self.assertEqual(data, plain)
 
         session.destroyObject(encobj)
@@ -701,9 +691,7 @@ class Pkcs11Tester(unittest.TestCase):
         self.assertEqual(
             label, session.getAttributeValue(certobj, [PyKCS11.CKA_LABEL])[0]
         )
-        certval = "".join(
-            map(chr, session.getAttributeValue(certobj, [PyKCS11.CKA_VALUE])[0])
-        )
+        certval = bytes(session.getAttributeValue(certobj, [PyKCS11.CKA_VALUE])[0])
         self.assertEqual(certval, certificate.public_bytes(Encoding.DER))
 
         objs = session.findObjects([(PyKCS11.CKA_LABEL, label)])
@@ -716,15 +704,11 @@ class Pkcs11Tester(unittest.TestCase):
                 cka_class == PyKCS11.CKO_PRIVATE_KEY
                 or cka_class == PyKCS11.CKO_PUBLIC_KEY
             ):
-                cka_modulus = "".join(
-                    map(chr, session.getAttributeValue(obj, [PyKCS11.CKA_MODULUS])[0])
-                )
+                cka_modulus = bytes(session.getAttributeValue(obj, [PyKCS11.CKA_MODULUS])[0])
                 n = decode_int(private_key.public_key().public_numbers().n)
                 self.assertEqual(n, cka_modulus)
             elif cka_class == PyKCS11.CKO_CERTIFICATE:
-                val = "".join(
-                    map(chr, session.getAttributeValue(certobj, [PyKCS11.CKA_VALUE])[0])
-                )
+                val = bytes(session.getAttributeValue(certobj, [PyKCS11.CKA_VALUE])[0])
                 self.assertEqual(val, certificate.public_bytes(Encoding.DER))
 
                 # TODO: extract subject and stuff here and compare.
@@ -805,10 +789,9 @@ class Pkcs11Tester(unittest.TestCase):
                 ]
 
                 key = session.createObject(template)
-                response = session.sign(
+                response = bytes(session.sign(
                     key, v["chal"], PyKCS11.Mechanism(mechanism, None)
-                )
-                response = "".join(map(chr, response))
+                ))
                 self.assertEqual(response, exp)
 
                 session.destroyObject(key)
@@ -848,8 +831,7 @@ class Pkcs11Tester(unittest.TestCase):
                 PyKCS11.CKM_SHA384,
                 PyKCS11.CKM_SHA512,
             ):
-                resp = session.digest(v["msg"], PyKCS11.Mechanism(m, None))
-                resp = "".join(map(chr, resp))
+                resp = bytes(session.digest(v["msg"], PyKCS11.Mechanism(m, None)))
                 self.assertEqual(resp, v[m])
 
         session.logout()
