@@ -196,7 +196,7 @@ class Pkcs11Tester(unittest.TestCase):
                 ),
                 default_backend(),
             )
-            self.assertEquals(key.public_numbers(), key2.public_numbers())
+            self.assertEqual(key.public_numbers(), key2.public_numbers())
 
             key.verify(
                 "".join(map(chr, signature)), tosign, padding.PKCS1v15(), mech["h"]
@@ -284,7 +284,7 @@ class Pkcs11Tester(unittest.TestCase):
                 ),
                 default_backend(),
             )
-            self.assertEquals(key.public_numbers(), key2.public_numbers())
+            self.assertEqual(key.public_numbers(), key2.public_numbers())
 
             key.verify(
                 "".join(map(chr, sig)),
@@ -396,7 +396,7 @@ class Pkcs11Tester(unittest.TestCase):
             ),
             default_backend(),
         )
-        self.assertEquals(key.public_numbers(), key2.public_numbers())
+        self.assertEqual(key.public_numbers(), key2.public_numbers())
 
         signature = decode_ec_sig(signature)
         key.verify(signature, tosign, ec.ECDSA(h))
@@ -473,7 +473,7 @@ class Pkcs11Tester(unittest.TestCase):
             keyobj, ciphertext, PyKCS11.Mechanism(PyKCS11.CKM_RSA_PKCS, None)
         )
         decrypted = "".join(map(chr, decrypted))
-        self.assertEquals(data, decrypted)
+        self.assertEqual(data, decrypted)
 
         self.assertIn("CKM_RSA_PKCS_OAEP", self.mechs)
         info = self.pkcs11.getMechanismInfo(self.slot, "CKM_RSA_PKCS_OAEP")
@@ -643,7 +643,7 @@ class Pkcs11Tester(unittest.TestCase):
                 decobj, cipher, PyKCS11.Mechanism(CKM_YUBICO_AES_CCM_WRAP, None)
             )
             plain = "".join(map(chr, plain))
-            self.assertEquals(data, plain)
+            self.assertEqual(data, plain)
 
         session.destroyObject(encobj)
         session.destroyObject(decobj)
@@ -809,7 +809,7 @@ class Pkcs11Tester(unittest.TestCase):
                     key, v["chal"], PyKCS11.Mechanism(mechanism, None)
                 )
                 response = "".join(map(chr, response))
-                self.assertEquals(response, exp)
+                self.assertEqual(response, exp)
 
                 session.destroyObject(key)
         session.logout()
@@ -850,7 +850,7 @@ class Pkcs11Tester(unittest.TestCase):
             ):
                 resp = session.digest(v["msg"], PyKCS11.Mechanism(m, None))
                 resp = "".join(map(chr, resp))
-                self.assertEquals(resp, v[m])
+                self.assertEqual(resp, v[m])
 
         session.logout()
 
